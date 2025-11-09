@@ -407,3 +407,111 @@ These queries prove:
 * Interconnected model works.
 * Business questions are answered from curated zone.
 
+* Additional
+
+* Bronze Layer → Raw Zone (Landing / Ingestion)
+
+Where:
+s3://ecom-olist-lake/raw/...
+
+Created by:
+Manual uploads (Olist CSVs) + Clickstream generator output + Glue Crawlers for metadata.
+
+Purpose:
+Store raw, immutable data as it arrives — exactly as from source systems.
+
+Format:
+CSV or JSON (as-is).
+
+Operations:
+
+No transformations.
+
+Used for lineage, debugging, reprocessing.
+
+Schemas inferred by Glue Crawler (ecom_raw_db).
+
+Example Tables:
+
+ecom_raw_db.olist_orders_dataset
+
+ecom_raw_db.olist_customers_dataset
+
+ecom_raw_db.olist_clickstream_events
+
+In interview terms:
+
+“Bronze is my raw layer on S3, holding source Olist and clickstream data in original CSV form. Glue Crawlers catalog it for schema discovery.”
+
+# Silver Layer → Cleaned Zone (Standardized / Enriched)
+
+Where:
+s3://ecom-olist-lake/cleaned/...
+
+Created by:
+AWS Glue ETL Jobs (PySpark) reading ecom_raw_db and writing cleaned Parquet.
+
+Purpose:
+Clean, standardize, and structure the data — the “single version of truth” for operational querying.
+
+Format:
+Parquet (columnar, optimized for Athena).
+
+Operations:
+
+Data type casting (timestamp, double, int).
+
+Removing duplicates and nulls.
+
+Basic enrichment (derived fields like order_date, event_date).
+
+Partitioning if applicable.
+
+Glue Database:
+ecom_cleaned_db
+
+Example Tables:
+
+ecom_cleaned_db.orders
+
+ecom_cleaned_db.customers
+
+ecom_cleaned_db.products
+
+ecom_cleaned_db.olist_clickstream_events
+
+In interview terms:
+
+“Silver is my cleaned zone — the trusted, queryable Parquet datasets generated from raw CSVs using Glue PySpark ETL.”
+
+# Gold Layer → Curated Zone (Analytics / Business Ready)
+
+Where:
+s3://ecom-olist-lake/curated/...
+
+Created by:
+Athena CTAS queries built from the cleaned zone.
+
+Purpose:
+Deliver business-ready, aggregated, and modeled data — optimized for BI dashboards, analytics, and ML.
+
+Format:
+Parquet (star-schema format: facts and dimensions).
+
+Operations:
+
+Dimensional modeling (fact/dim tables).
+
+Joins and aggregations.
+
+Ready for downstream consumption.
+
+Glue Database:
+ecom_curated_db
+
+Example Tables:
+
+dim_customer, dim_product
+
+fact_orders, fact_order_items, fact_events
+
